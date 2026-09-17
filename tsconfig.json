@@ -15,5 +15,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src", "tests", "vite.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "server",
+    "tests",
+    "tests-auth",
+    "vite.config.ts",
+    "playwright*.ts"
+  ]
 }

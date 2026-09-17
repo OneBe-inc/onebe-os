@@ -16,7 +16,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run dev -- --port 5181",
+    command: "npm run dev:mock -- --port 5181",
     url: "http://127.0.0.1:5181",
     reuseExistingServer: !process.env.CI,
   },

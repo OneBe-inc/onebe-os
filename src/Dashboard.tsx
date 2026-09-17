@@ -54,12 +54,14 @@ export function Dashboard({
   toggle,
   open,
   navigate,
+  userName,
 }: {
   data: DashboardData;
   completed: string[];
   toggle: (id: string) => void;
   open: (view: DetailView) => void;
   navigate: (path: string) => void;
+  userName: string;
 }) {
   const pending = data.tasks.filter((t) => !completed.includes(t.id));
   const overdue = pending.filter((t) => t.overdue).length;
@@ -114,7 +116,7 @@ export function Dashboard({
     <>
       <div className="dashboard-welcome">
         <div>
-          <h1>おはようございます、山田さん</h1>
+          <h1>おはようございます、{userName.split(/[\s　]+/)[0]}さん</h1>
           <p>やるべきことを整理して、今日も一歩前へ。</p>
         </div>
         <div className="today">

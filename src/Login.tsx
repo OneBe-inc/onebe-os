@@ -1,25 +1,71 @@
 import { useState } from "react";
 import { AlertCircle, ArrowLeft, UserRound } from "lucide-react";
 import { Brand, GoogleMark, Modal } from "./components";
+import { isMockAuth } from "./data/auth";
+const errors: Record<string, [string, string]> = {
+  unregistered: [
+    "このアカウントは\n登録されていません",
+    "会社のGoogleアカウントで再度お試しください。\n利用を希望する場合は管理者にお問い合わせください。",
+  ],
+  oauth_expired: [
+    "ログインの有効時間が切れました",
+    "ログイン画面から、もう一度お試しください。",
+  ],
+  access_denied: [
+    "ログインがキャンセルされました",
+    "Googleアカウントの選択から、もう一度お試しください。",
+  ],
+  not_configured: [
+    "ログインの設定を準備中です",
+    "管理者にGoogleログインの接続設定をご確認ください。",
+  ],
+  storage: [
+    "ログイン状態を保存できません",
+    "ブラウザのストレージ設定をご確認ください。",
+  ],
+  auth_failed: [
+    "ログインできませんでした",
+    "接続を確認して、もう一度お試しください。",
+  ],
+};
 export function Login({
   signIn,
 }: {
-  signIn: (account: "member" | "unregistered", remember: boolean) => void;
+  signIn: (
+    account: "member" | "unregistered",
+    remember: boolean,
+  ) => Promise<void>;
 }) {
   const [remember, setRemember] = useState(true);
   const [picker, setPicker] = useState(false);
-  const [error, setError] = useState("");
-  const choose = (account: "member" | "unregistered") => {
+  const [error, setError] = useState(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    return code && Object.hasOwn(errors, code) ? code : "";
+  });
+  const [pending, setPending] = useState(false);
+  const choose = async (account: "member" | "unregistered") => {
+    setPending(true);
     try {
-      signIn(account, remember);
+      await signIn(account, remember);
     } catch (e) {
       setPicker(false);
+      setPending(false);
       setError(
         e instanceof Error && e.message === "UNREGISTERED"
           ? "unregistered"
-          : "storage",
+          : e instanceof Error && e.message === "AUTH_NOT_CONFIGURED"
+            ? "not_configured"
+            : isMockAuth
+              ? "storage"
+              : "auth_failed",
       );
     }
+  };
+  const begin = () => {
+    if (pending) return;
+    setError("");
+    if (isMockAuth) setPicker(true);
+    else void choose("member");
   };
   return (
     <div className="login-page">
@@ -47,22 +93,14 @@ export function Login({
           {error ? (
             <>
               <AlertCircle className="login-error-icon" size={30} />
-              <h2 className="error-title">
-                {error === "unregistered"
-                  ? "このアカウントは\n登録されていません"
-                  : "ログイン状態を保存できません"}
-              </h2>
+              <h2 className="error-title">{errors[error][0]}</h2>
               <p className="login-description" role="alert">
-                {error === "unregistered"
-                  ? "会社のGoogleアカウントで再度お試しください。\n利用を希望する場合は管理者にお問い合わせください。"
-                  : "ブラウザのストレージ設定をご確認ください。"}
+                {errors[error][1]}
               </p>
               <button
                 className="google-button"
-                onClick={() => {
-                  setError("");
-                  setPicker(true);
-                }}
+                onClick={begin}
+                disabled={pending}
               >
                 <GoogleMark />
                 別のGoogleアカウントでログイン
@@ -80,14 +118,20 @@ export function Login({
                 <br />
                 ログインしてください。
               </p>
-              <button className="google-button" onClick={() => setPicker(true)}>
+              <button
+                className="google-button"
+                onClick={begin}
+                disabled={pending}
+                aria-busy={pending}
+              >
                 <GoogleMark />
-                Googleでログイン
+                {pending ? "Googleへ移動しています…" : "Googleでログイン"}
               </button>
               <label className="remember">
                 <input
                   type="checkbox"
                   checked={remember}
+                  disabled={pending}
                   onChange={(e) => setRemember(e.target.checked)}
                 />
                 ログイン状態を保持する
@@ -101,10 +145,10 @@ export function Login({
           )}
         </div>
         <span className="login-footer">
-          社内メンバー専用 <span>· UIプレビュー</span>
+          社内メンバー専用 {isMockAuth && <span>· UIプレビュー</span>}
         </span>
       </section>
-      {picker && (
+      {isMockAuth && picker && (
         <Modal title="プレビュー用アカウント" onClose={() => setPicker(false)}>
           <p className="muted">
             モック認証です。Googleへの接続や情報の送信は行いません。

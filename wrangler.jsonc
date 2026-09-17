@@ -1,5 +1,39 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "onebe-os", "compatibility_date": "2026-09-18",
-  "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+  "name": "onebe-os",
+  "main": "server/index.ts",
+  "compatibility_date": "2026-09-17",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true,
+  },
+  "vars": {
+    "APP_ORIGIN": "https://configure-before-deploy.invalid",
+    "GOOGLE_CLIENT_ID": "",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "onebe-os-auth",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "observability": { "enabled": false },
+  "env": {
+    "local": {
+      "name": "onebe-os-local",
+      "vars": { "APP_ORIGIN": "http://localhost:8787", "GOOGLE_CLIENT_ID": "" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "onebe-os-auth-local",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "migrations",
+        },
+      ],
+    },
+  },
 }

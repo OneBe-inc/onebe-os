@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Navigate,
   NavLink,
@@ -25,46 +25,102 @@ import {
   X,
 } from "lucide-react";
 import type { DashboardData, User } from "./domain";
-import { mockAuth } from "./data/auth";
+import { auth, isMockAuth } from "./data/auth";
 import { mockRepository } from "./data/mock";
 import { navigation, pageTitle } from "./navigation";
 import { Login } from "./Login";
 import { Avatar, Brand, Modal } from "./components";
 import { Dashboard, TaskList } from "./Dashboard";
 import type { DetailView } from "./Dashboard";
+import { safeReturnTo } from "./return-to";
 
 export function App() {
-  const [user, setUser] = useState<User | null>(() => mockAuth.readSession());
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const revision = useRef(0);
   const navigate = useNavigate();
   const location = useLocation();
-  const requested: unknown = location.state?.from;
-  const returnTo =
-    typeof requested === "string" &&
-    requested.startsWith("/") &&
-    !requested.startsWith("//") &&
-    requested !== "/login"
-      ? requested
-      : "/dashboard";
+  const requested: unknown =
+    location.state?.from ??
+    new URLSearchParams(location.search).get("returnTo");
+  const returnTo = safeReturnTo(requested);
+  const sync = useCallback(async () => {
+    const current = ++revision.current;
+    try {
+      const member = await auth.readSession();
+      if (current !== revision.current) return;
+      setUser(member);
+      setAuthError("");
+    } catch {
+      if (current === revision.current)
+        setAuthError(
+          "ログイン状態を確認できませんでした。時間をおいて再度お試しください。",
+        );
+    } finally {
+      if (current === revision.current) setAuthLoading(false);
+    }
+  }, []);
   useEffect(() => {
-    const sync = () => setUser(mockAuth.readSession());
+    void sync();
     window.addEventListener("storage", sync);
     window.addEventListener("focus", sync);
+    window.addEventListener("onebe:session-expired", sync);
     const timer = window.setInterval(sync, 60000);
     return () => {
       clearInterval(timer);
       window.removeEventListener("storage", sync);
       window.removeEventListener("focus", sync);
+      window.removeEventListener("onebe:session-expired", sync);
+      revision.current++;
     };
-  }, []);
-  const signIn = (account: "member" | "unregistered", remember: boolean) => {
-    const next = mockAuth.signIn(account, remember);
-    setUser(next);
+  }, [sync]);
+  const signIn = async (
+    account: "member" | "unregistered",
+    remember: boolean,
+  ) => {
+    const next = await auth.signIn(account, remember, returnTo);
+    if (next) {
+      revision.current++;
+      setUser(next);
+    }
   };
-  const signOut = () => {
-    mockAuth.signOut();
-    setUser(null);
-    navigate("/login", { replace: true });
+  const signOut = async () => {
+    revision.current++;
+    try {
+      await auth.signOut();
+      revision.current++;
+      setUser(null);
+      navigate("/login", { replace: true });
+    } catch {
+      setAuthError(
+        "ログアウトできませんでした。接続を確認して再度お試しください。",
+      );
+    }
   };
+  if (authLoading)
+    return (
+      <div className="loading-state" role="status">
+        ログイン状態を確認しています…
+      </div>
+    );
+  if (authError)
+    return (
+      <div className="empty-state">
+        <Brand />
+        <h1>接続を確認してください</h1>
+        <p role="alert">{authError}</p>
+        <button
+          className="primary-button"
+          onClick={() => {
+            setAuthLoading(true);
+            void sync();
+          }}
+        >
+          再読み込み
+        </button>
+      </div>
+    );
   return (
     <Routes>
       <Route
@@ -77,7 +133,7 @@ export function App() {
         path="/*"
         element={
           user ? (
-            <Workspace user={user} signOut={signOut} />
+            <Workspace key={user.id} user={user} signOut={signOut} />
           ) : (
             <Navigate to="/login" replace state={{ from: location.pathname }} />
           )
@@ -86,7 +142,13 @@ export function App() {
     </Routes>
   );
 }
-function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
+function Workspace({
+  user,
+  signOut,
+}: {
+  user: User;
+  signOut: () => Promise<void>;
+}) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -372,7 +434,10 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
                 <>
                   <div className="user-summary">
                     <strong>{user.name}</strong>
-                    <span>{user.department} · プレビュー用メンバー</span>
+                    <span>
+                      {user.department}
+                      {isMockAuth ? " · プレビュー用メンバー" : ""}
+                    </span>
                   </div>
                   <button onClick={() => go("/settings/profile")}>
                     <UserRound size={17} />
@@ -449,6 +514,7 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
                 path="/dashboard"
                 element={
                   <Dashboard
+                    userName={user.name}
                     data={data}
                     completed={completed}
                     toggle={toggle}
@@ -525,7 +591,10 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
             1ではログイン、共通ナビゲーション、ダッシュボードの操作を確認できます。
           </p>
           <p>
-            表示内容はすべてサンプルデータです。Google認証・Calendar・freeeなどの外部連携はまだ接続されていません。
+            業務データはサンプルです。Calendar・freeeなどの業務連携はまだ接続されていません。
+            {isMockAuth
+              ? "現在はモック認証のUIプレビューです。"
+              : "ログイン状態はCloudflare側で管理されています。"}
           </p>
           <p className="muted">検索：Ctrl / ⌘ + K　閉じる：Esc</p>
         </Modal>
