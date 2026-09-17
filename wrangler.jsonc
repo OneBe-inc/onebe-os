@@ -1,6 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "onebe-os",
+  "workers_dev": true,
+  "preview_urls": false,
   "main": "server/index.ts",
   "compatibility_date": "2026-09-17",
   "assets": {
@@ -10,14 +12,14 @@
     "run_worker_first": true,
   },
   "vars": {
-    "APP_ORIGIN": "https://configure-before-deploy.invalid",
-    "GOOGLE_CLIENT_ID": "",
+    "APP_ORIGIN": "https://onebe-os.issei-masuya.workers.dev",
+    "GOOGLE_CLIENT_ID": "385483152267-gu03p9vlket98dri9tsb1q7oa4quhgrb.apps.googleusercontent.com",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "onebe-os-auth",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "c0fab292-7021-48ca-989a-4cc38e336d50",
       "migrations_dir": "migrations",
     },
   ],

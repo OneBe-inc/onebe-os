@@ -2,7 +2,7 @@
 
 OneBeの社内ワークスペース。承認済みのログイン・ダッシュボード画像を基準に、正式ロゴ、ネイビー／ホワイトの配色、余白を活かしたUIを実装しています。
 
-> **Cloudflare Workers + D1のGoogle認証を実装しています。** 本番のCloudflareアカウント・Google OAuth・許可メンバーは未設定です。業務データは引き続きサンプルです。接続完了前に本番利用・実データ投入はしないでください。
+> **Cloudflare Workers + D1のGoogle認証を実装・公開しました。** [OneBe OS](https://onebe-os.issei-masuya.workers.dev/login) でGoogleログインを開始できます。Google認証画面への遷移と未ログイン時のアクセス制限は確認済みです。管理者本人によるログイン完了の確認は別途必要です。業務データは引き続きサンプルです。
 
 ## 起動
 
@@ -73,7 +73,7 @@ React + TypeScript + Viteの静的SPAです。外部フォントサービスは�
 認証WorkerとStatic Assetsを同一オリジンに配置します。`run_worker_first: true` により、保護ページとAPIは先に認証を確認します。**デプロイは自動実行されません。** 設定が空の場合はデプロイを中止します。Pagesへの静的アップロードだけでは認証APIが動かないため、Workers構成を使用してください。
 
 - Workers: [設定手順](docs/google-auth.md)に沿ってアカウント・D1・OAuth・許可メンバーを準備後、`npm run deploy`。
-- ローカルD1での検証は完了しています。本番D1・OAuthクライアント・Worker秘密情報は未設定です。
+- 本番D1・社内限定OAuthクライアント・Worker秘密情報・許可メンバーを設定済みです。メンバー情報とシークレットはGitに含めません。
 - Calendar／Drive／R2／freee／Slack等の業務連携は未接続です。
 
 具体的な接続境界・セキュリティ条件は [docs/architecture.md](docs/architecture.md) を参照してください。

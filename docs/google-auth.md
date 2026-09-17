@@ -4,7 +4,13 @@
 
 実装済み: WorkersのOAuth開始・コールバック、Google IDトークンの検証、D1メンバー照合、セッション発行・確認・失効、CSRF対策、保護API、ログインUI。UIとサーバーのテストを用意しています。
 
-未完了: 対象Cloudflareアカウントへの認証、本番D1作成、公開URL確定、Google OAuthクライアント設定、許可メンバー登録、本番公開、Googleアカウント本人による実ログイン確認。コードの完成と接続完了は別です。
+2026年9月18日接続済み: Cloudflare認証、本番D1、Google Cloudの専用プロジェクト `onebe-os`、社内限定OAuthクライアント、許可メンバー登録、Worker Secrets、本番公開。
+
+公開URL: https://onebe-os.issei-masuya.workers.dev/login
+
+確認済み: 公開ログイン画面、Googleのアカウント選択画面への遷移、保護ページのログインへの転送、保護APIの401、別オリジンからのログイン開始の403。Googleアカウント本人によるログイン完了・ログアウト確認は別途必要です。
+
+以下は再構築・設定変更時の手順です。既存のDBやクライアントを重複作成しないでください。
 
 ## 1. Cloudflareの接続と公開URL
 
@@ -61,6 +67,8 @@ DELETE FROM sessions WHERE member_id = '<対象ID>';
 ```
 
 ## 4. 公開と確認
+
+SPAへのフォールバックは `assets.not_found_handling: "single-page-application"` を使用します。`public/_redirects` の `/* /index.html 200` はWorkersでループとして拒否されるため配置しません。認証判定は `run_worker_first: true` を維持します。プレビューURLは無効化し、認証の戻り先は本番URLに限定しています。
 
 ```sh
 npm ci
