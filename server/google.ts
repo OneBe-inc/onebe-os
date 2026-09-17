@@ -5,6 +5,7 @@ import {
   type JWTVerifyGetKey,
 } from "jose";
 import type { Env, GoogleIdentity, Transaction } from "./types";
+import { googleAvatarUrl } from "../src/avatar-url";
 
 const keys = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs"),
@@ -32,7 +33,11 @@ export function identityFromClaims(
       claims.hd !== env.GOOGLE_WORKSPACE_DOMAIN.toLowerCase())
   )
     throw new Error("INVALID_IDENTITY");
-  return { sub: claims.sub, email: claims.email.toLowerCase() };
+  return {
+    sub: claims.sub,
+    email: claims.email.toLowerCase(),
+    picture: googleAvatarUrl(claims.picture),
+  };
 }
 
 export async function verifyGoogleIdToken(

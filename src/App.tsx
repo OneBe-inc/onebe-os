@@ -409,7 +409,11 @@ function Workspace({
               aria-expanded={panel === "user"}
               onClick={() => setPanel(panel === "user" ? null : "user")}
             >
-              <Avatar name={user.name} />
+              <Avatar
+                key={user.avatarUrl ?? "initials"}
+                name={user.name}
+                imageUrl={user.avatarUrl}
+              />
               <span>
                 <strong>{user.name}</strong>
                 <small>{user.department}</small>

@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { googleAvatarUrl } from "./avatar-url";
 import type { ReactNode } from "react";
 import { X, ArrowRight } from "lucide-react";
 export function Brand({
@@ -19,14 +20,29 @@ export function Brand({
 }
 export function Avatar({
   name,
+  imageUrl,
   small = false,
 }: {
   name: string;
+  imageUrl?: string | null;
   small?: boolean;
 }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const source = googleAvatarUrl(imageUrl);
   return (
     <span className={`avatar ${small ? "small" : ""}`} aria-label={name}>
-      {name.startsWith("+") ? name : name.slice(0, 1)}
+      {source && source !== failedUrl ? (
+        <img
+          src={source}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(source)}
+        />
+      ) : name.startsWith("+") ? (
+        name
+      ) : (
+        name.slice(0, 1)
+      )}
     </span>
   );
 }

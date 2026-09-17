@@ -17,6 +17,7 @@ export interface Env {
   GOOGLE_WORKSPACE_DOMAIN?: string;
 }
 export interface Member {
+  avatar_url: string | null;
   id: string;
   email: string;
   google_sub: string | null;
@@ -33,6 +34,7 @@ export interface Transaction {
   expires_at: number;
 }
 export interface GoogleIdentity {
+  picture?: string | null;
   sub: string;
   email: string;
 }

@@ -6,15 +6,33 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createWorker } from "./index";
 import { cookieName, digest, safeReturnTo } from "./security";
 import { identityFromClaims, verifyGoogleIdToken } from "./google";
-import type { Database, Env, Statement, Transaction } from "./types";
+import { googleAvatarUrl } from "../src/avatar-url";
+import type {
+  Database,
+  Env,
+  Statement,
+  Transaction,
+  GoogleIdentity,
+} from "./types";
 
 const ORIGIN = "https://portal.example.test";
 const clientId = "unit-test.apps.googleusercontent.com";
-function setup(identity = { sub: "google-123", email: "member@example.test" }) {
+function setup(
+  identity: GoogleIdentity = {
+    sub: "google-123",
+    email: "member@example.test",
+  },
+) {
   const db = new DatabaseSync(":memory:");
   db.exec(
     readFileSync(
       new URL("../migrations/0001_auth.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  db.exec(
+    readFileSync(
+      new URL("../migrations/0002_member_avatar.sql", import.meta.url),
       "utf8",
     ),
   );
@@ -114,6 +132,64 @@ function setup(identity = { sub: "google-123", email: "member@example.test" }) {
     getTransaction: () => transaction,
   };
 }
+
+test("Google profile image is persisted, returned in session, and updated on the next login", async () => {
+  const identity: GoogleIdentity = {
+    sub: "google-123",
+    email: "member@example.test",
+    picture: "https://lh3.googleusercontent.com/a/avatar-one",
+  };
+  const s = setup(identity);
+  const login = await s.signIn();
+  const current = async () =>
+    (await (
+      await s.req("/api/auth/session", { headers: { Cookie: login.cookie } })
+    ).json()) as { user: { avatarUrl: string | null } };
+  assert.equal((await current()).user.avatarUrl, identity.picture);
+  identity.picture = "https://lh3.googleusercontent.com/a/avatar-two";
+  await s.callback(await s.start());
+  assert.equal((await current()).user.avatarUrl, identity.picture);
+  identity.picture = null;
+  await s.callback(await s.start());
+  assert.equal((await current()).user.avatarUrl, null);
+});
+
+test("profile pictures are optional and restricted to Google HTTPS hosts", () => {
+  for (const value of [
+    undefined,
+    null,
+    42,
+    "invalid",
+    "http://lh3.googleusercontent.com/a",
+    "https://googleusercontent.com.evil.test/a",
+    "https://evil.test/a",
+    "https://user:pass@lh3.googleusercontent.com/a",
+    "https://lh3.googleusercontent.com:8443/a",
+    "data:image/png;base64,abc",
+  ]) {
+    assert.equal(googleAvatarUrl(value), null);
+  }
+  const picture = "https://lh3.googleusercontent.com/a/profile=s96-c";
+  const claims = {
+    sub: "s",
+    email: "x@example.test",
+    email_verified: true,
+    nonce: "n",
+    picture,
+  };
+  assert.equal(
+    identityFromClaims(claims, { GOOGLE_CLIENT_ID: clientId }, "n").picture,
+    picture,
+  );
+  assert.equal(
+    identityFromClaims(
+      { ...claims, picture: undefined },
+      { GOOGLE_CLIENT_ID: clientId },
+      "n",
+    ).picture,
+    null,
+  );
+});
 
 test("start uses exact Google origin, minimal scopes, state, nonce and PKCE; no secrets in response", async () => {
   const s = setup();

@@ -60,6 +60,14 @@ test("real Worker and local D1 session show the member, survive reload, and revo
   page,
   context,
 }) => {
+  await page.route(
+    "https://lh3.googleusercontent.com/a/onebe-test-avatar",
+    (route) =>
+      route.fulfill({
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="blue"/></svg>',
+      }),
+  );
   await context.addCookies([
     {
       name: "onebe-local-session",
@@ -79,6 +87,28 @@ test("real Worker and local D1 session show the member, survive reload, and revo
     page.getByRole("heading", { name: "おはようございます、認証さん" }),
   ).toBeVisible();
   expect((await page.request.get("/api/dashboard")).status()).toBe(200);
+  const avatar = page.locator(".user-button .avatar img");
+  await expect(avatar).toBeVisible();
+  await expect
+    .poll(() => avatar.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBe(40);
+  await expect(avatar).toHaveAttribute("referrerpolicy", "no-referrer");
+  await page.setViewportSize({ width: 1200, height: 400 });
+  const sidebar = page.locator(".sidebar");
+  await expect(sidebar).toHaveCSS("scrollbar-width", "none");
+  await sidebar.hover();
+  await page.mouse.wheel(0, 600);
+  await expect
+    .poll(() => sidebar.evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(0);
+  await page.unroute("https://lh3.googleusercontent.com/a/onebe-test-avatar");
+  await page.route(
+    "https://lh3.googleusercontent.com/a/onebe-test-avatar",
+    (route) => route.abort(),
+  );
+  await page.reload();
+  await expect(page.locator(".user-button .avatar")).toHaveText("認");
+  await expect(page.locator(".user-button .avatar img")).toHaveCount(0);
   await page.locator(".user-button").click();
   await page.getByRole("button", { name: "ログアウト", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);

@@ -1,4 +1,5 @@
 import { mockDashboard } from "../src/data/fixtures";
+import { googleAvatarUrl } from "../src/avatar-url";
 import { exchangeGoogleCode } from "./google";
 import {
   appOrigin,
@@ -27,13 +28,14 @@ const publicUser = (member: Member) => ({
   name: member.name,
   department: member.department,
   initials: member.name.slice(0, 1),
+  avatarUrl: googleAvatarUrl(member.avatar_url),
 });
 
 async function session(request: Request, env: Env, origin: string) {
   const token = readCookie(request, cookieName("session", origin));
   if (!validToken(token)) return null;
   return env.DB.prepare(
-    `SELECT m.id, m.email, m.google_sub, m.name, m.department, s.csrf_token
+    `SELECT m.id, m.email, m.google_sub, m.name, m.department, m.avatar_url, s.csrf_token
     FROM sessions s JOIN members m ON m.id = s.member_id
     WHERE s.token_hash = ? AND s.expires_at > ? AND m.is_active = 1`,
   )
@@ -194,9 +196,14 @@ export function createWorker(exchange = exchangeGoogleCode) {
               return failure("unregistered");
             // Pin the Google subject at first successful sign-in; an email alone cannot later replace it.
             const linked = await env.DB.prepare(
-              "UPDATE members SET google_sub = ? WHERE id = ? AND is_active = 1 AND (google_sub IS NULL OR google_sub = ?) RETURNING *",
+              "UPDATE members SET google_sub = ?, avatar_url = ? WHERE id = ? AND is_active = 1 AND (google_sub IS NULL OR google_sub = ?) RETURNING *",
             )
-              .bind(identity.sub, member.id, identity.sub)
+              .bind(
+                identity.sub,
+                googleAvatarUrl(identity.picture),
+                member.id,
+                identity.sub,
+              )
               .first<Member>();
             if (!linked) return failure("unregistered");
             const token = randomToken(),
