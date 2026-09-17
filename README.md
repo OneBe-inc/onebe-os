@@ -2,7 +2,7 @@
 
 OneBeの社内ワークスペース。承認済みのログイン・ダッシュボード画像を基準に、正式ロゴ、ネイビー／ホワイトの配色、余白を活かしたUIを実装しています。
 
-> **Cloudflare Workers + D1のGoogle認証を実装・公開しました。** [OneBe OS](https://onebe-os.issei-masuya.workers.dev/login) でGoogleログインを開始できます。Google認証画面への遷移と未ログイン時のアクセス制限は確認済みです。管理者本人によるログイン完了の確認は別途必要です。業務データは引き続きサンプルです。
+> **Cloudflare Workers + D1のGoogle認証を実装・公開しました。** [OneBe OS](https://onebe-os.issei-masuya.workers.dev/login) でGoogleログインを開始できます。管理者本人による実Googleログイン、ダッシュボード表示、再読み込み後のログイン維持、未ログイン時のアクセス制限を確認済みです。業務データは引き続きサンプルです。
 
 ## 起動
 
