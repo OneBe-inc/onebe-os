@@ -27,6 +27,7 @@ import {
 } from "./data";
 import type { Regulation } from "./data";
 import "./policies.css";
+import { DrivePolicies } from "./DrivePolicies";
 
 export function policyPath(id: string, articleId?: string) {
   return `/internal/policies?rule=${encodeURIComponent(id)}${articleId ? `#article-${encodeURIComponent(articleId)}` : ""}`;
@@ -46,6 +47,15 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 export function Policies({ userId }: { userId: string }) {
+  const [params] = useSearchParams();
+  return params.get("view") === "drive" ? (
+    <DrivePolicies />
+  ) : (
+    <SamplePolicies userId={userId} />
+  );
+}
+
+function SamplePolicies({ userId }: { userId: string }) {
   const [params] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -179,6 +189,9 @@ export function Policies({ userId }: { userId: string }) {
         <span>サンプル</span>
         デザイン確認用の規定です。会社の正式な規定ではありません。
       </div>
+      <Link className="drive-back" to="/internal/policies?view=drive">
+        Driveの規定を確認する →
+      </Link>
       <nav className="pol-tabs" aria-label="社内規定の表示">
         <Link
           to={policyPath(rule.id)}
@@ -409,7 +422,7 @@ export function Policies({ userId }: { userId: string }) {
                 onToggle={(e) => setTocOpen(e.currentTarget.open)}
               >
                 <summary>この規定の目次</summary>
-              <nav aria-label="章・条文への移動">
+                <nav aria-label="章・条文への移動">
                   {rule.chapters.map((chapter, i) => (
                     <div key={chapter.id}>
                       <Link

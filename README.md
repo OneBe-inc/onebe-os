@@ -24,6 +24,7 @@ npm run dev
 - アプリシェル：7分類のアコーディオンサイドバー、現在ページ表示、全体検索（Ctrl／⌘+K）、通知、ヘルプ、ユーザーメニュー。
 - ダッシュボード：要対応、タスク、Calendar予定領域、進行案件、承認待ち、売上・入金、契約更新、お知らせ。各カードから詳細表示／準備中ページへ移動。
 - 社内 → 社内規定：6つのサンプル規定、全文検索、章・条文の目次、規定内検索、カテゴリー別一覧、お気に入り、改定履歴、文字サイズ変更、印刷。共通の全体検索からも該当条文へ移動できます。
+- Driveの規定：承認済みフォルダの一覧と原本表示。サーバー側のGoogle認証設定が必要です。未接続・空フォルダ・権限エラーを区別します。設定方法は [Drive接続手順](docs/drive-integration.md) を参照してください。
 - 子ページ：`src/navigation.ts`に定義。営業、案件、売上・経理、承認、社内、設定の各ルートを直接開けます。未知のURLはページ未検出表示。
 - レスポンシブ：デスクトップ、タブレット、モバイル用ドロワー。
 - キーボード操作、ダイアログ、本文スキップ、チャートの読み上げ用テーブル、動きを減らす設定に対応。
@@ -58,16 +59,16 @@ public/brand/     OneBe正式ロゴ
 tests/            ブラウザテスト
 ```
 
-React + TypeScript + Viteの静的SPAです。外部フォントサービスは使用せず、Noto Sans JP／Noto Serif JPを同梱しています。人物写真はサンプルのイニシャルアバターに置き換えています。参考画像の仮のリングマークや山岳画像は使用していません。契約更新は必須要件のため最下段に追加しています。
+React + TypeScript + ViteのSPAと、規定読み取り用Workerで構成します。外部フォントサービスは使用せず、Noto Sans JP／Noto Serif JPを同梱しています。人物写真はサンプルのイニシャルアバターに置き換えています。
 
 ## Cloudflareへの接続準備
 
-確認版はSitesで配信します。`.openai/hosting.json` に配信先とSPAのフォールバックを設定しています。公開操作はSites経由で行い、初期の閲覧範囲は所有者のみです。画面内のモック認証とは別に、閲覧範囲をSites側で管理します。GitHubへのpushだけではSitesは更新されません。
+確認版はSitesで配信します。`.openai/hosting.json` に配信先を設定しています。公開操作はSites経由で行い、閲覧範囲は所有者のみです。画面内のモック認証とは別に、Sites側のアクセス制御とWorker側の認証確認でDrive APIを保護します。GitHubへのpushだけではSitesは更新されません。
 
 Workers Static Assets用の `wrangler.jsonc` とPages用のSPAリダイレクト設定を同梱しています。**デプロイは自動実行されません。** 公開前に認証とアクセス制御を実装してください。
 
 - Workers: アカウント・対象環境を確認後、`npm run deploy`。
-- Pages: ビルドコマンド `npm run build`、出力 `dist`。
+- Pages等に静的画面だけを配信する場合の出力は `dist/client`。Drive読み取りAPIにはWorkerが必要です。
 - D1／R2／OAuth／freee／Slack等の秘密情報やリソースは未作成です。
 
 具体的な接続境界・セキュリティ条件は [docs/architecture.md](docs/architecture.md) を参照してください。
@@ -76,7 +77,7 @@ Workers Static Assets用の `wrangler.jsonc` とPages用のSPAリダイレクト
 
 `/internal/policies` は共通シェル内の画面です。`/internal/policies?rule=expenses#article-receipt` のように規定・条文を指定でき、モックログイン後もその場所へ復帰します。お気に入りはユーザーID別のlocalStorageに保存し、他の端末とは同期しません。全体検索（Ctrl／⌘+K）は規定本文も対象です。
 
-サンプル本文は [OneBe-Internal-regulations](https://github.com/OneBe-inc/OneBe-Internal-regulations/tree/b03ab38927287c7bd7c3acd5336b22aa2ceaf9b6) から移植しました。両リポジトリ間の自動同期やGoogle Drive接続はありません。正式な規定を扱う前に、本番認証とサーバー側のアクセス制御、非公開データの配信方法を実装する必要があります。現在のログイン画面はサンプルデータの閲覧導線であり、データを保護する仕組みではありません。
+サンプル本文は [OneBe-Internal-regulations](https://github.com/OneBe-inc/OneBe-Internal-regulations/tree/b03ab38927287c7bd7c3acd5336b22aa2ceaf9b6) から移植しました。両リポジトリ間の自動同期はありません。Driveの原本表示は `?view=drive` で開きます。Google側の認証情報が未設定の場合は「未接続」と表示します。現在のGoogle風ログイン画面はサンプル用であり、Drive APIの認証根拠にはしません。
 
 `tests/policies.spec.ts` は直接リンクからのログイン復帰、共通検索、規定内検索、一覧・お気に入り、目次、モバイル、印刷レイアウト、アクセシビリティを検証します。
 

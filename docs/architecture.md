@@ -2,6 +2,8 @@
 
 ## 現在の境界
 
+社内規定のDrive閲覧APIを `server/` に追加しました。Sitesの信頼済み認証ヘッダーと公開範囲を用い、Googleとの接続はサーバーのみで処理します。承認済みフォルダの都度読み取りを実装済みですが、Google認証情報は別途設定が必要です。詳細は [Drive連携](drive-integration.md) を参照してください。DB同期や会社全体の本番Googleログインは未実装です。
+
 UIとデータは分離しています。`domain.ts` の型を画面が利用し、`data/mock.ts` がデータを供給します。認証は `AuthService` と `data/auth.ts` に集約しています。将来のAPIや外部連携にブラウザから直接接続しない方針です。
 
 現在のタスク・通知保存は同期のブラウザ保存です。D1へ移す段階でリポジトリの読み書きを非同期にし、保存中・失敗・再試行・競合の状態をUIに追加します。現段階で外部連携が動くという意味ではありません。
@@ -26,7 +28,7 @@ UIとデータは分離しています。`domain.ts` の型を画面が利用し
 | `/api/notifications/*` | ユーザー単位の通知と既読 |
 | `/api/integrations/*` | Calendar、Drive、freee、Slack等の連携制御 |
 
-SPAのフォールバック設定はPhase 1の静的ページ用です。API追加時は `/api/*` をWorkersで処理し、APIの404や認証エラーにindex.htmlを返さないようにルーティングを分離します。D1・R2 bindingやOAuth secretsは公開環境と検証環境で分離します。
+`/api/policies` と `/api/policies/:id/content` をWorkerで処理します。APIの404や認証エラーにはJSONを返し、画面のSPAフォールバックと分離しています。D1・R2 bindingやOAuth secretsは公開環境と検証環境で分離します。
 
 ## 本番化前の必須条件
 
