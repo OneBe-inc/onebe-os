@@ -32,6 +32,8 @@ import { Login } from "./Login";
 import { Avatar, Brand, Modal } from "./components";
 import { Dashboard, TaskList } from "./Dashboard";
 import type { DetailView } from "./Dashboard";
+import { Policies, policyPath } from "./policies/Policies";
+import { searchRegulations } from "./policies/data";
 
 export function App() {
   const [user, setUser] = useState<User | null>(() => mockAuth.readSession());
@@ -79,7 +81,13 @@ export function App() {
           user ? (
             <Workspace user={user} signOut={signOut} />
           ) : (
-            <Navigate to="/login" replace state={{ from: location.pathname }} />
+            <Navigate
+              to="/login"
+              replace
+              state={{
+                from: location.pathname + location.search + location.hash,
+              }}
+            />
           )
         }
       />
@@ -141,7 +149,9 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
       );
     setMobile(false);
     setPanel(null);
-    document.title = `${pageTitle(location.pathname)} | OneBe OS`;
+    if (location.pathname !== "/internal/policies") {
+      document.title = `${pageTitle(location.pathname)} | OneBe OS`;
+    }
   }, [location.pathname]);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -201,11 +211,19 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
         type: "タスク",
       })) ?? [];
     const normalize = (s: string) => s.normalize("NFKC").toLocaleLowerCase();
-    return [...pages, ...projects, ...tasks]
-      .filter((r) =>
+    const policyResults = searchRegulations(query).map(({ rule, matches }) => ({
+      title:
+        rule.title +
+        (matches[0] ? ` · 第${matches[0].number}条 ${matches[0].title}` : ""),
+      path: policyPath(rule.id, matches[0]?.id),
+      type: "社内規定",
+    }));
+    return [
+      ...policyResults,
+      ...[...pages, ...projects, ...tasks].filter((r) =>
         normalize(r.title + r.type).includes(normalize(query.trim())),
-      )
-      .slice(0, 12);
+      ),
+    ].slice(0, 12);
   }, [data, query]);
   const unread = data?.notices.filter((n) => !read.includes(n.id)).length ?? 0;
   const notice = view?.startsWith("notice:")
@@ -320,7 +338,7 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
           </button>
           <button className="global-search" onClick={() => setSearch(true)}>
             <Search size={19} />
-            <span>企業・人物・案件・タスクなどを検索...</span>
+            <span>企業・人物・案件・タスク・社内規定を検索...</span>
             <kbd>⌘ K</kbd>
           </button>
           <div className="header-actions">
@@ -458,6 +476,10 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
                 }
               />
               <Route
+                path="/internal/policies"
+                element={<Policies key={user.id} userId={user.id} />}
+              />
+              <Route
                 path="*"
                 element={
                   <Placeholder
@@ -485,7 +507,7 @@ function Workspace({ user, signOut }: { user: User; signOut: () => void }) {
             <input
               data-initial-focus
               aria-label="検索キーワード"
-              placeholder="企業・人物・案件・タスクを検索"
+              placeholder="企業・人物・案件・タスク・社内規定を検索"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {

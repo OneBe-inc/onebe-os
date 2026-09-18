@@ -151,9 +151,15 @@ test("accordion, active link, all planned child routes and missing page", async 
       await expect(
         page.getByRole("heading", { name: title, exact: true }),
       ).toBeVisible();
-      await expect(
-        page.getByText("このページは準備中です。", { exact: true }),
-      ).toBeVisible();
+      if (path === "/internal/policies") {
+        await expect(
+          page.getByRole("article", { name: "就業規則の本文" }),
+        ).toBeVisible();
+      } else {
+        await expect(
+          page.getByText("このページは準備中です。", { exact: true }),
+        ).toBeVisible();
+      }
     }
   }
   await page.goto("/not-a-page");
