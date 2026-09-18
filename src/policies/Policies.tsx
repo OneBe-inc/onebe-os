@@ -409,7 +409,7 @@ export function Policies({ userId }: { userId: string }) {
                 onToggle={(e) => setTocOpen(e.currentTarget.open)}
               >
                 <summary>この規定の目次</summary>
-                <nav>
+              <nav aria-label="章・条文への移動">
                   {rule.chapters.map((chapter, i) => (
                     <div key={chapter.id}>
                       <Link
