@@ -62,6 +62,8 @@ React + TypeScript + Viteの静的SPAです。外部フォントサービスは�
 
 ## Cloudflareへの接続準備
 
+確認版はSitesで配信します。`.openai/hosting.json` に配信先とSPAのフォールバックを設定しています。公開操作はSites経由で行い、初期の閲覧範囲は所有者のみです。画面内のモック認証とは別に、閲覧範囲をSites側で管理します。GitHubへのpushだけではSitesは更新されません。
+
 Workers Static Assets用の `wrangler.jsonc` とPages用のSPAリダイレクト設定を同梱しています。**デプロイは自動実行されません。** 公開前に認証とアクセス制御を実装してください。
 
 - Workers: アカウント・対象環境を確認後、`npm run deploy`。
