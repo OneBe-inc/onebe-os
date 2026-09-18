@@ -65,7 +65,7 @@ React + TypeScript + ViteのSPAと、規定読み取り用Workerで構成しま�
 
 確認版はSitesで配信します。`.openai/hosting.json` に配信先を設定しています。公開操作はSites経由で行い、閲覧範囲は所有者のみです。画面内のモック認証とは別に、Sites側のアクセス制御とWorker側の認証確認でDrive APIを保護します。GitHubへのpushだけではSitesは更新されません。
 
-Workers Static Assets用の `wrangler.jsonc` とPages用のSPAリダイレクト設定を同梱しています。**デプロイは自動実行されません。** 公開前に認証とアクセス制御を実装してください。
+Workers用の `wrangler.jsonc` を同梱しています。画面のフォールバックと `/api/*` の処理を分離しています。**デプロイは自動実行されません。** Sites以外へ公開する場合は、その環境の認証とアクセス制御を実装してください。
 
 - Workers: アカウント・対象環境を確認後、`npm run deploy`。
 - Pages等に静的画面だけを配信する場合の出力は `dist/client`。Drive読み取りAPIにはWorkerが必要です。
